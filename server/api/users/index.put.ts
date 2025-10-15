@@ -1,7 +1,8 @@
-import { z } from 'zod'
-
-export const userSchema = z.object({
-  id: z.number(),
+const userSchema = z.object({
+  id: z
+    .string()
+    .regex(/^\d+$/, '必须是数字')
+    .transform((val) => Number(val)),
   username: z.string().trim().optional(),
   password_hash: z.string().trim().optional(),
   role_id: z.number().optional(),
@@ -10,7 +11,6 @@ export const userSchema = z.object({
 })
 
 export default defineCustomHandler(async (event) => {
-  const prisma = usePrisma()
   const body = await readBody(event)
 
   const data = userSchema.parse(body)

@@ -1,23 +1,18 @@
-import { defineEventHandler, H3Event, EventHandler } from 'h3'
-
-// 定义统一的响应数据结构
-interface ApiResponse<T = any> {
-  code: number
-  data: T
-  trace_id: string
-  message: string | Object
-}
+import { defineEventHandler } from 'h3'
+import type { EventHandler, EventHandlerRequest, H3Event } from 'h3'
 
 // 封装原始的处理器逻辑
-type CustomHandler = (event: H3Event) => Promise<any> | any
+type CustomHandler<T = unknown> = (event: H3Event) => Promise<T> | T
 
-export const defineCustomHandler = (handler: CustomHandler): EventHandler => {
+export const defineCustomHandler = <T = unknown>(
+  handler: CustomHandler<T>
+): EventHandler<EventHandlerRequest, Promise<ApiResponse<T>>> => {
   return defineEventHandler(async (event) => {
     event.context.trace_id = crypto.randomUUID()
 
-    const response: ApiResponse = {
+    const response: ApiResponse<T> = {
       code: 200,
-      data: null,
+      data: undefined as unknown as T,
       trace_id: event.context.trace_id,
       message: '',
     }
@@ -29,9 +24,9 @@ export const defineCustomHandler = (handler: CustomHandler): EventHandler => {
       const result = await handler(event)
 
       if (result instanceof Object) {
-        response.data = result ?? null
+        response.data = (result ?? null) as T
       } else {
-        response.message = result
+        response.message = String(result)
       }
     } catch (error) {
       if (error && typeof error === 'object' && 'statusCode' in error) {
@@ -72,10 +67,12 @@ export const defineCustomHandler = (handler: CustomHandler): EventHandler => {
       setResponseStatus(event, 500)
     }
 
-    console.log(
-      `${new Date().toLocaleString()} [${event.node.req.method?.toUpperCase()}] ${
-        event.node.req.url
-      } ${event.node.req.headers['user-agent']} ${response.code} ${Date.now() - startTime}ms`
+    logger.info(
+      `${new Date().toLocaleString()} [${event.node.req.method?.toUpperCase()}] {${
+        event.context.trace_id
+      }} ${event.node.req.url} [${event.node.req.headers['user-agent'] || '-'}] ${response.code} ${
+        Date.now() - startTime
+      }ms`
     )
 
     return response

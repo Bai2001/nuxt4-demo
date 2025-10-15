@@ -1,5 +1,7 @@
 <script lang="ts" setup></script>
 <template>
-  <div>index.vue</div>
+  <div>
+    <div>index.vue</div>
+  </div>
 </template>
 <style lang="less" scoped></style>

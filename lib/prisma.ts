@@ -1,29 +1,15 @@
-import { PrismaClient } from '~~/lib/prismaClient'
+import { PrismaClient } from '@prisma/client'
 
 const prismaClientSingleton = () => {
-  const prisma = new PrismaClient().$extends({
-    query: {
-      $allModels: {
-        async $allOperations({ operation, model, args, query }) {
-          console.log('operation', operation)
-          console.log('model', model)
-          console.log('args', args)
-          return query(args)
-        },
-      },
-    },
-  })
-
-  return prisma
+  return new PrismaClient()
 }
 
 declare const globalThis: {
-  prismaGlobal: ReturnType<typeof prismaClientSingleton>
-} & typeof global
+  prismaGlobal: ReturnType<typeof prismaClientSingleton>;
+} & typeof global;
 
-const prisma: ReturnType<typeof prismaClientSingleton> =
-  globalThis.prismaGlobal ?? prismaClientSingleton()
-
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma
+const prisma = globalThis.prismaGlobal ?? prismaClientSingleton()
 
 export default prisma
+
+if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma

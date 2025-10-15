@@ -1,9 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -15,19 +11,32 @@ export default defineNuxtConfig({
   },
   alias: {},
   nitro: {
+    rollupConfig: {
+      external: ['@prisma/client', '.prisma/client/index-browser'],
+      plugins: [],
+    },
     esbuild: {
       options: {
         target: 'esnext',
       },
     },
-    alias: {
-      '.prisma/client': resolve(__dirname, './node_modules/@prisma/client'),
+    typescript: {
+      tsConfig: {
+        include: ['../types/**/*.d.ts'],
+      },
+    },
+  },
+  typescript: {
+    tsConfig: {
+      include: ['../types/**/*.d.ts'],
     },
   },
   vite: {
     resolve: {
       alias: {
-        '.prisma/client/index-browser': './node_modules/@prisma/client/index-browser.js',
+        '.prisma/client/index-browser': fileURLToPath(
+          new URL('./node_modules/.prisma/client/index-browser.js', import.meta.url)
+        ),
       },
     },
   },

@@ -1,6 +1,4 @@
-import { z } from 'zod'
-
-export const userSchema = z.object({
+const userSchema = z.object({
   id: z.number().optional(),
   username: z.string().trim(),
   password_hash: z.string().trim(),
@@ -10,7 +8,6 @@ export const userSchema = z.object({
 })
 
 export default defineCustomHandler(async (event) => {
-  const prisma = usePrisma()
   const body = await readBody(event)
 
   const user = userSchema.parse(body)
