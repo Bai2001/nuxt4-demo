@@ -12,7 +12,7 @@ export default defineNuxtConfig({
   alias: {},
   nitro: {
     rollupConfig: {
-      external: ['@prisma/client', '.prisma/client/index-browser'],
+      external: ['@prisma/client'],
       plugins: [],
     },
     esbuild: {

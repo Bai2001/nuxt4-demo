@@ -1,4 +1,6 @@
 import pino from 'pino'
+import 'pino-roll'
+import 'pino-pretty'
 import fs from 'node:fs'
 import path from 'node:path'
 
