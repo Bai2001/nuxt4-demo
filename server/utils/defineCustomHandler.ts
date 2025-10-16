@@ -1,21 +1,20 @@
 import { defineEventHandler } from 'h3'
-import type { EventHandler, EventHandlerRequest, H3Event } from 'h3'
+import type { EventHandler, EventHandlerRequest } from 'h3'
 
-// 封装原始的处理器逻辑
-type CustomHandler<T = unknown> = (event: H3Event) => Promise<T> | T
-
-export const defineCustomHandler = <T = unknown>(
-  handler: CustomHandler<T>
-): EventHandler<EventHandlerRequest, Promise<ApiResponse<T>>> => {
-  return defineEventHandler(async (event) => {
+export const defineCustomHandler = <T extends EventHandlerRequest, D>(
+  handler: EventHandler<T, D>
+): EventHandler<T, D> =>
+  defineEventHandler<T>(async (event) => {
     event.context.trace_id = crypto.randomUUID()
 
-    const response: ApiResponse<T> = {
+    let resp: ApiResponse<D> = {
       code: 200,
-      data: undefined as unknown as T,
+      data: null as D,
       trace_id: event.context.trace_id,
-      message: '',
+      message: 'success',
     }
+    let err
+    setResponseHeader(event, 'trace-id', event.context.trace_id)
 
     const startTime = Date.now()
 
@@ -23,17 +22,13 @@ export const defineCustomHandler = <T = unknown>(
       // 1. 执行原始的 API 逻辑
       const result = await handler(event)
 
-      if (result instanceof Object) {
-        response.data = (result ?? null) as T
-      } else {
-        response.message = String(result)
-      }
+      resp.data = result
     } catch (error) {
-      if (error && typeof error === 'object' && 'statusCode' in error) {
-        response.code = error.statusCode as number
+      let errorMsg = ''
 
+      if (error && typeof error === 'object' && 'statusCode' in error) {
         if ('statusMessage' in error) {
-          response.message = error.statusMessage as string
+          errorMsg = error.statusMessage as string
         }
       }
 
@@ -45,7 +40,7 @@ export const defineCustomHandler = <T = unknown>(
         'message' in error &&
         error.name === 'ZodError'
       ) {
-        response.message = JSON.parse(error.message as string)
+        errorMsg = error.message as string
       }
 
       // prisma 错误处理
@@ -56,25 +51,28 @@ export const defineCustomHandler = <T = unknown>(
         'message' in error &&
         error.name === 'PrismaClientKnownRequestError'
       ) {
-        response.message = error.message as string
+        errorMsg = error.message as string
       }
 
       // 4. 处理其他未捕获的错误 (默认 500)
-      console.error('Uncaught server error:', error)
-      if (response.code === 200) {
-        response.code = 500
-      }
-      setResponseStatus(event, 500)
+      logger.error(error)
+
+      resp.message = errorMsg
+      resp.code = 500
+
+      err = createError({ statusCode: 500, message: errorMsg })
     }
 
     logger.info(
       `${new Date().toLocaleString()} [${event.node.req.method?.toUpperCase()}] {${
         event.context.trace_id
-      }} ${event.node.req.url} [${event.node.req.headers['user-agent'] || '-'}] ${response.code} ${
-        Date.now() - startTime
-      }ms`
+      }} ${event.node.req.url} [${event.node.req.headers['user-agent'] || '-'}] ${
+        resp.code
+      } ${Date.now() - startTime}ms`
     )
+    if (err) {
+      throw err
+    }
 
-    return response
+    return resp
   })
-}

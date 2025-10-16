@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client'
+
 const userSchema = z.object({
   id: z
     .string()
@@ -14,7 +16,12 @@ const userSchema = z.object({
 export default defineCustomHandler(async (event) => {
   const query = userSchema.parse(getQuery(event))
 
-  const usersWhere = { id: query.id }
+  const usersWhere: Prisma.usersWhereInput = {
+    id: query.id,
+    username: {
+      contains: query.username,
+    },
+  }
   const users = await prisma.users.findMany({
     where: usersWhere,
     include: {
