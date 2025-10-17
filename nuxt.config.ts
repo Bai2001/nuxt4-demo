@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/eslint', '@nuxt/image', '@prisma/nuxt'],
+  modules: ['@nuxt/eslint', '@nuxt/image', '@prisma/nuxt', '@element-plus/nuxt'],
   devServer: {
     port: 9527,
     host: '0.0.0.0',
@@ -42,5 +42,11 @@ export default defineNuxtConfig({
   },
   prisma: {
     runMigration: false,
+  },
+  elementPlus: {
+    icon: 'el-icon',
+    globalConfig: {
+      size: 'small',
+    },
   },
 })
